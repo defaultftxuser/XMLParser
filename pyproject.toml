@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "xmlparser"
+version = "0.1.0"
+description = ""
+authors = ["defaultftxuser <banginlord@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["all"], version = "^0.115.5"}
+celery = "^5.4.0"
+asyncpg = "^0.30.0"
+alembic = "^1.14.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
