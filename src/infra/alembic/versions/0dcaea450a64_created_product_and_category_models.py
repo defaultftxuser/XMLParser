@@ -1,8 +1,8 @@
-"""created models categories and products
+"""created product and category models
 
-Revision ID: 3ceac477b2f2
+Revision ID: 0dcaea450a64
 Revises: 
-Create Date: 2024-11-19 15:21:58.530172
+Create Date: 2024-11-20 20:45:36.015401
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3ceac477b2f2'
+revision: str = '0dcaea450a64'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,13 +25,15 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
     )
     op.create_table('products',
-    sa.Column('product_name', sa.String(), nullable=False),
+    sa.Column('sale_date', sa.Date(), nullable=True),
+    sa.Column('product', sa.String(), nullable=False),
     sa.Column('price', sa.Float(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
-    sa.Column('category_id', sa.UUID(), nullable=False),
+    sa.Column('category_id', sa.UUID(), nullable=True),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),

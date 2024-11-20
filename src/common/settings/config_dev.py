@@ -2,10 +2,10 @@ from dotenv import load_dotenv, find_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-load_dotenv(find_dotenv(".env"))
+load_dotenv(find_dotenv(".env.dev"))
 
 
-class ProjectSettings(BaseSettings):
+class DevProjectSettings(BaseSettings):
 
     postgres_database: str = Field(alias="SQL_DATABASE")
     postgres_engine: str = Field(alias="SQL_ENGINE")
@@ -59,14 +59,6 @@ class ProjectSettings(BaseSettings):
             self.redis_port,
         )
 
-    @property
-    def get_redis_backend_url(self) -> str:
-        return "{}://:@{}:{}/1".format(
-            self.broker,
-            self.redis_host,
-            self.redis_port,
-        )
 
-
-def get_settings() -> ProjectSettings:
-    return ProjectSettings()
+def get_settings() -> DevProjectSettings:
+    return DevProjectSettings()
