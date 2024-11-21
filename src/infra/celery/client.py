@@ -9,7 +9,7 @@ settings = ProjectSettings()
 app = Celery(
     main=settings.celery_name,
     broker=settings.get_redis_url,
-    # backend=settings.get_redis_backend_url,
+    backend=settings.get_redis_backend_url,
 )
 
 app.conf.update(
@@ -20,11 +20,12 @@ app.conf.update(
     enable_utc=True,
 )
 
+app.autodiscover_tasks(["src.infra.celery.tasks"])
+
 app.conf.beat_schedule = {
     "task-every-hour": {
-        "task": "tasks.gpt_task",
+        "task": "src.infra.celery.tasks.gpt_task",
         "schedule": crontab(minute="0", hour="*"),
     },
 }
-
 app.conf.timezone = "UTC"
