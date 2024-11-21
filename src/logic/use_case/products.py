@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 @dataclass(eq=False)
 class ProductUseCase:
-    service: ProductCategoryRepository
+    repository: ProductCategoryRepository
 
     async def get_product_with_category(
         self, entity: ProductSchema, session: AsyncSession, filters: PaginationFilters
@@ -22,7 +22,7 @@ class ProductUseCase:
             f"Fetching products with categories. Filters: {filters}, Entity: {entity}"
         )
         try:
-            products = await self.service.get_products_with_category(
+            products = await self.repository.get_products_with_category(
                 entity=entity.dict(), session=session, filters=filters
             )
             logger.info(f"Successfully fetched products with categories: {products}")

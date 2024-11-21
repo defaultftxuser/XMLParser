@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
+from typing import Optional
 
 from src.domain.entities.base import BaseEntity
 from src.domain.exceptions.entities import (
@@ -26,11 +28,9 @@ class ProductEntity(BaseEntity):
 
 @dataclass(eq=False)
 class ProductIdEntity(BaseEntity):
-    product_id: int | None
+    product_id: Optional[uuid] = field(default_factory=uuid.uuid4)
 
-    def validate(self):
-        if not self.product_id:
-            self.product_id = 999
+    def validate(self): ...
 
     def to_dict(self):
         return {"product_id": self.product_id}

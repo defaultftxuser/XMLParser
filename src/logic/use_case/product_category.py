@@ -93,20 +93,3 @@ class ParseAndCreateProductCategoryUseCase(CreateProductCategoryUseCase):
         except Exception as e:
             logger.error(f"Unexpected error during parse and create operation: {e}")
             return f"Unexpected error: {e}", None
-
-
-def get_product_service_usecase():
-    return CreateProductCategoryUseCase(
-        category_service=CategoryService(repository=CategoryRepository(model=Category)),
-        product_service=ProductService(repository=ProductRepository(model=Product)),
-        uow=AsyncPostgresClient(settings=get_settings()),
-    )
-
-
-def get_parse_and_create_products():
-    return ParseAndCreateProductCategoryUseCase(
-        category_service=CategoryService(repository=CategoryRepository(model=Category)),
-        product_service=ProductService(repository=ProductRepository(model=Product)),
-        uow=AsyncPostgresClient(settings=get_settings()),
-        parser=LXMLParser(),
-    )
