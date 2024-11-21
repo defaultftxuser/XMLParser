@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from pymongo.errors import WriteError, OperationFailure
+
 from src.common.settings.logger import get_logger
 from src.domain.entities.base_lxml import GPTAnswerEntity
 from src.infra.repository.mongo.base_mongo import MongoRepository
@@ -12,14 +14,31 @@ class GPTAnswersRepo(MongoRepository):
 
     async def add_one(self, entity: GPTAnswerEntity):
         try:
-            logger.debug("Attempting to add GPTAnswerEntity: %s", entity.to_dict())
+            logger.info("Attempting to add GPTAnswerEntity: %s", entity.to_dict())
             result = await self.client.get_collection.insert_one(entity.to_dict())
             logger.info(
                 "Successfully added GPTAnswerEntity with ID: %s", result.inserted_id
             )
             return str(result.inserted_id)
+        except ConnectionError as e:
+            logger.exception(
+                f"MongoDB connection error while adding GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
+        except WriteError as e:
+            logger.exception(
+                f"MongoDB write error while adding GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
+        except OperationFailure as e:
+            logger.exception(
+                f"MongoDB operation failure while adding GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
         except Exception as e:
-            logger.error("Error occurred while adding GPTAnswerEntity: %s", e)
+            logger.exception(
+                f"Unexpected error while adding GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
             raise e
 
     async def get_one(self, entity: GPTAnswerEntity):
@@ -34,8 +53,20 @@ class GPTAnswersRepo(MongoRepository):
             else:
                 logger.info("No GPTAnswerEntity found for filter: %s", entity.to_dict())
             return document
+        except ConnectionError as e:
+            logger.exception(
+                f"MongoDB connection error while fetching GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
+        except OperationFailure as e:
+            logger.exception(
+                f"MongoDB operation failure while fetching GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
         except Exception as e:
-            logger.error("Error occurred while fetching GPTAnswerEntity: %s", e)
+            logger.exception(
+                f"Unexpected error while fetching GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
             raise e
 
     async def get_many(self, entity: GPTAnswerEntity):
@@ -49,8 +80,20 @@ class GPTAnswersRepo(MongoRepository):
             )
             logger.info("Fetched %d GPTAnswerEntities", len(documents))
             return documents
+        except ConnectionError as e:
+            logger.exception(
+                f"MongoDB connection error while fetching GPTAnswerEntities: {entity.to_dict()} - {e}"
+            )
+            raise e
+        except OperationFailure as e:
+            logger.exception(
+                f"MongoDB operation failure while fetching GPTAnswerEntities: {entity.to_dict()} - {e}"
+            )
+            raise e
         except Exception as e:
-            logger.error("Error occurred while fetching GPTAnswerEntities: %s", e)
+            logger.exception(
+                f"Unexpected error while fetching GPTAnswerEntities: {entity.to_dict()} - {e}"
+            )
             raise e
 
     async def delete_one(self, entity: GPTAnswerEntity):
@@ -67,8 +110,20 @@ class GPTAnswersRepo(MongoRepository):
                     entity.to_dict(),
                 )
             return result.deleted_count > 0
+        except ConnectionError as e:
+            logger.exception(
+                f"MongoDB connection error while deleting GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
+        except OperationFailure as e:
+            logger.exception(
+                f"MongoDB operation failure while deleting GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
+            raise e
         except Exception as e:
-            logger.error("Error occurred while deleting GPTAnswerEntity: %s", e)
+            logger.exception(
+                f"Unexpected error while deleting GPTAnswerEntity: {entity.to_dict()} - {e}"
+            )
             raise e
 
     async def update_one(self, filter_entity: GPTAnswerEntity, entity: GPTAnswerEntity):
@@ -88,6 +143,23 @@ class GPTAnswersRepo(MongoRepository):
                     "No GPTAnswerEntity updated for filter: %s", filter_entity.to_dict()
                 )
             return result.modified_count > 0
+        except ConnectionError as e:
+            logger.exception(
+                f"MongoDB connection error while updating GPTAnswerEntity: {filter_entity.to_dict()} - {e}"
+            )
+            raise e
+        except WriteError as e:
+            logger.exception(
+                f"MongoDB write error while updating GPTAnswerEntity: {filter_entity.to_dict()} - {e}"
+            )
+            raise e
+        except OperationFailure as e:
+            logger.exception(
+                f"MongoDB operation failure while updating GPTAnswerEntity: {filter_entity.to_dict()} - {e}"
+            )
+            raise e
         except Exception as e:
-            logger.error("Error occurred while updating GPTAnswerEntity: %s", e)
+            logger.exception(
+                f"Unexpected error while updating GPTAnswerEntity: {filter_entity.to_dict()} - {e}"
+            )
             raise e

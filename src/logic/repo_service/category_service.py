@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.filters.pagination import PaginationFilters
@@ -40,11 +41,12 @@ class CategoryService:
             )
             logger.info(f"Successfully fetched categories: {categories}")
             return categories
-        except SQLException as e:
-            logger.error(
-                f"Error fetching categories. Entity: {entity}, Filters: {filters}, Error: {e}"
-            )
-            raise e.message
+        except SQLAlchemyError as e:
+            logger.error(f"Error getting categorise {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Exception occurred : {e}")
+            raise
 
     async def create_category(
         self,
@@ -61,9 +63,12 @@ class CategoryService:
             else:
                 logger.warning(f"Category creation returned None. Entity: {entity}")
             return category
-        except SQLException as e:
-            logger.error(f"Error creating category. Entity: {entity}, Error: {e}")
-            raise e.message
+        except SQLAlchemyError as e:
+            logger.error(f"Error creating categorise {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Exception occurred : {e}")
+            raise
 
     async def update_category(
         self,
@@ -80,9 +85,12 @@ class CategoryService:
             else:
                 logger.warning(f"Category update returned None. Entity: {entity}")
             return category
-        except SQLException as e:
-            logger.error(f"Error updating category. Entity: {entity}, Error: {e}")
-            raise e.message
+        except SQLAlchemyError as e:
+            logger.error(f"Error updating category {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Exception occurred : {e}")
+            raise
 
     async def delete_category(
         self,
@@ -99,6 +107,9 @@ class CategoryService:
             else:
                 logger.warning(f"Category deletion returned None. Entity: {entity}")
             return category
-        except SQLException as e:
-            logger.error(f"Error deleting category. Entity: {entity}, Error: {e}")
-            raise e.message
+        except SQLAlchemyError as e:
+            logger.error(f"Error deleting category {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Exception occurred : {e}")
+            raise

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.filters.pagination import PaginationFilters
@@ -26,8 +27,13 @@ class ProductUseCase:
             )
             logger.info(f"Successfully fetched products with categories: {products}")
             return products
+        except SQLAlchemyError as e:
+            logger.exception(
+                f"Error fetching products with categories. Entity: {entity}, Filters: {filters}, Error: {e}"
+            )
+            raise e
         except Exception as e:
             logger.error(
-                f"Error fetching products with categories. Entity: {entity}, Filters: {filters}, Error: {e}"
+                f"Error occurred with data Entity: {entity}, Filters: {filters}, Error: {e}"
             )
             raise

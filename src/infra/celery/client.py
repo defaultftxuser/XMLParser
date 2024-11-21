@@ -28,4 +28,6 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute="0", hour="*"),
     },
 }
+
+
 app.conf.timezone = "UTC"

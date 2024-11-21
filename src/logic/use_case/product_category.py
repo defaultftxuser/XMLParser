@@ -1,6 +1,5 @@
 import asyncio
 from dataclasses import dataclass
-import datetime
 
 from src.common.settings.config import get_settings
 from src.common.settings.logger import get_logger
@@ -10,9 +9,6 @@ from src.domain.entities.base_lxml import (
 )
 from src.domain.entities.lxml_entities import (
     CategoryEntity,
-    ProductEntity,
-    QuantityEntity,
-    PriceEntity,
 )
 from src.infra.db.postgres.db import AsyncPostgresClient
 from src.infra.db.postgres.models.lxml_models import Category, Product
@@ -75,10 +71,10 @@ class ParseAndCreateProductCategoryUseCase(CreateProductCategoryUseCase):
     parser: LXMLParser
 
     async def parse_and_create(self, lxml_data: str, element: str = "//product"):
-        entities: list[BaseLxmlEntity] | None = self.parser.parsing(
-            lxml_data=lxml_data, element=element
-        )
         try:
+            entities: list[BaseLxmlEntity] | None = self.parser.parsing(
+                lxml_data=lxml_data, element=element
+            )
             if len(entities) > 0:
                 batch = []
                 for entity in entities:
@@ -91,9 +87,12 @@ class ParseAndCreateProductCategoryUseCase(CreateProductCategoryUseCase):
                         f"products {len(entities)=} succesfully created",
                         entity.sale_date,
                     )
-            return
+        except (ValueError, TypeError) as e:
+            logger.error(f"Error parsing data: {e}")
+            return f"Error occurred while parsing XML: {e}", None
         except Exception as e:
-            raise e
+            logger.error(f"Unexpected error during parse and create operation: {e}")
+            return f"Unexpected error: {e}", None
 
 
 def get_product_service_usecase():

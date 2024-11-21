@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from src.common.settings.logger import get_logger
 from src.infra.db.postgres.db import AsyncPostgresClient
 from src.infra.repository.postgres.raw_sql import QueryRepository
@@ -22,8 +24,11 @@ class QuerySQLService:
                 )
                 logger.debug(f"Total revenue for {input_date}: {revenue}")
                 return revenue
-        except Exception as e:
+        except SQLAlchemyError as e:
             logger.error(f"Error getting total revenue for date {input_date}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Exception occurred : {e}")
             raise
 
     async def get_date_top_three_products(self, input_date: date):
@@ -35,8 +40,11 @@ class QuerySQLService:
                 )
                 logger.debug(f"Top 3 products for {input_date}: {top_products}")
                 return top_products
+        except SQLAlchemyError as e:
+            logger.error(f"Error getting Top 3 products for date {input_date}: {e}")
+            raise
         except Exception as e:
-            logger.error(f"Error getting top 3 products for date {input_date}: {e}")
+            logger.error(f"Exception occurred : {e}")
             raise
 
     async def get_category_distribution_date(self, input_date: date):
@@ -52,8 +60,9 @@ class QuerySQLService:
                     f"Category distribution for {input_date}: {category_distribution}"
                 )
                 return category_distribution
+        except SQLAlchemyError as e:
+            logger.error(f"Error category distribution for date {input_date}: {e}")
+            raise
         except Exception as e:
-            logger.error(
-                f"Error getting category distribution for date {input_date}: {e}"
-            )
+            logger.error(f"Exception occurred : {e}")
             raise
