@@ -70,6 +70,7 @@ class ProductModelWithId(BaseEntity, BaseModelEntity):
 @dataclass(eq=False)
 class ProductEntityWithCategoryId(BaseEntity):
     category_id: uuid
+    sale_date: date
     product: ProductEntity
     quantity: QuantityEntity
     price: PriceEntity
@@ -83,6 +84,7 @@ class ProductEntityWithCategoryId(BaseEntity):
 
         return {
             "product": self.product.name,
+            "sale_date": self.sale_date,
             "quantity": self.quantity.quantity,
             "price": self.price.price,
             "category_id": self.category_id,
@@ -102,3 +104,28 @@ class CategoryModelWithId(BaseEntity, BaseModelEntity):
             "updated_at": self.updated_at,
             "name": self.name,
         }
+
+
+@dataclass(eq=False)
+class GPTAnswerEntity(BaseEntity):
+    date: datetime | date
+    answer: str
+
+    def validate(self):
+        if isinstance(self.date, date):
+            self.date = datetime.combine(self.date, datetime.min.time())
+
+    def to_dict(self):
+        return {"date": self.date, "answer": self.answer}
+
+
+@dataclass(eq=False)
+class GPTAnswerModel(BaseEntity):
+    date: datetime
+    answer: str
+    _id: uuid
+
+    def validate(self): ...
+
+    def to_dict(self):
+        return {"_id": self._id, "date": self.date, "answer": self.answer}

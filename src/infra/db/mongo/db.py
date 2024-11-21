@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from motor.motor_asyncio import AsyncIOMotorClient
+import motor
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
 from src.common.settings.config import ProjectSettings
 
@@ -8,10 +9,10 @@ from src.common.settings.config import ProjectSettings
 @dataclass(eq=False)
 class AsyncMongoClient:
     settings: ProjectSettings
-    client: AsyncIOMotorClient
+    collection: str
 
     @property
-    async def get_collection(self):
-        collection = self.settings.mongo_collection
-        return self.client[collection]
-
+    def get_collection(self) -> AsyncIOMotorCollection:
+        return motor.motor_asyncio.AsyncIOMotorClient(self.settings.get_no_sql_db_url)[
+            self.settings.mongo_database
+        ][self.collection]

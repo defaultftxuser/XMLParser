@@ -1,4 +1,12 @@
-from sqlalchemy import Column, String, Integer, Float, ForeignKey, Date
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Float,
+    ForeignKey,
+    Date,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import AbstractModel
@@ -15,10 +23,14 @@ class Category(AbstractModel):
 class Product(AbstractModel):
     __tablename__ = "products"
     sale_date = Column(Date)
-    product = Column(String, nullable=False)
+    product = Column(String, nullable=False, unique=True)
     price = Column(Float, nullable=False)
     quantity = Column(Integer, nullable=False)
 
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
 
     category = relationship("Category", back_populates="products")
+
+    __table_args__ = (
+        UniqueConstraint("product", "category_id", name="uq_product_category"),
+    )

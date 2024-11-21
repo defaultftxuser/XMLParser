@@ -1,4 +1,3 @@
-import datetime
 from dataclasses import dataclass
 from typing import Any, Sequence
 
@@ -43,26 +42,12 @@ class PostgresRepo:
         )
         return result.mappings().fetchone()
 
-    async def get_or_create(
-        self, session: AsyncSession, entity: dict[Any, Any]
-    ) -> dict[Any, Any] | None:
-
-        query = (
-            (insert(self.model).values(**entity)).on_conflict_do_update(
-                index_elements=["name"], set_={"updated_at": datetime.datetime.now()}
-            )
-        ).returning(self.model.__table__.c)
-        result = await session.execute(query)
-        return result.mappings().fetchone()
-
     async def update_one(
         self, session: AsyncSession, entity: dict[Any, Any]
     ) -> dict[Any, Any] | None:
 
         result = await session.execute(
-            update(self.model.__table__.columns)
-            .values(**entity)
-            .returning(self.model.__table__.columns)
+            update(self.model).values(**entity).returning(self.model.__table__.columns)
         )
         return result.mappings().fetchone()
 
@@ -71,7 +56,7 @@ class PostgresRepo:
     ) -> dict[Any, Any] | None:
 
         result = await session.execute(
-            delete(self.model.__table__.columns)
+            delete(self.model)
             .filter_by(**entity)
             .returning(self.model.__table__.columns)
         )

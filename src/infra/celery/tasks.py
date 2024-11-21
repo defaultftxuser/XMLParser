@@ -11,6 +11,4 @@ def start_parse_xml_and_save_products(xml_data: str, element: str = "//product")
 
 
 @app.task
-def gpt_task():
-    ...
-
+def gpt_task(): ...

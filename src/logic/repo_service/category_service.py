@@ -43,7 +43,7 @@ class CategoryService:
         session: AsyncSession,
     ) -> CategoryModelWithId | None:
         try:
-            category = await self.repository.create_category(
+            category = await self.repository.get_or_create(
                 entity=entity, session=session
             )
 

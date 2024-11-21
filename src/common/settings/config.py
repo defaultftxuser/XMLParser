@@ -7,7 +7,7 @@ load_dotenv(find_dotenv(".env"))
 
 class ProjectSettings(BaseSettings):
 
-    postgres_database: str = Field(alias="SQL_DATABASE")
+    postgres_database: str = Field(alias="POSTGRES_DATABASE")
     postgres_engine: str = Field(alias="SQL_ENGINE")
     postgres_user: str = Field(alias="POSTGRES_USER")
     postgres_password: str = Field(alias="POSTGRES_PASSWORD")
@@ -15,18 +15,25 @@ class ProjectSettings(BaseSettings):
     postgres_port: str = Field(alias="POSTGRES_PORT")
     postgres_name: str = Field(alias="POSTGRES_NAME")
 
-    mongo_database: str = Field(alias="NO_SQL_DATABASE")
+    mongo_database: str = Field(alias="MONGO_DATABASE")
     mongo_user: str = Field(alias="MONGO_INITDB_ROOT_USERNAME")
     mongo_password: str = Field(alias="MONGO_INITDB_ROOT_PASSWORD")
     mongo_host: str = Field(alias="MONGO_INITDB_ROOT_HOST")
     mongo_port: str = Field(alias="MONGO_INITDB_PORT")
-    mongo_collection: str = Field(alias="MONGO_INITDB_DATABASE")
+    mongo_db_name: str = Field(alias="MONGO_INITDB_DATABASE")
+    mongo_collection: str = Field(alias="MONGO_COLLECTION")
 
     broker: str = Field(alias="BROKER")
     redis_host: str = Field(alias="REDIS_HOST")
     redis_port: str = Field(alias="REDIS_PORT")
 
     celery_name: str = Field("CELERY_NAME")
+
+    gpt_url: str = Field(alias="GPT_URL")
+    gpt_headers: str = Field(alias="GPT_HEADERS")
+    gpt_text: str = Field(alias="GPT_TEXT")
+    gpt_json: str = Field(alias="GPT_JSON")
+    iam_token: str = Field(alias="IAM_TOKEN")
 
     @property
     def get_sql_db_url(self) -> str:
@@ -43,7 +50,6 @@ class ProjectSettings(BaseSettings):
     @property
     def get_no_sql_db_url(self) -> str:
         return "{}://{}:{}@{}:{}".format(
-            self.mongo_database,
             self.mongo_database,
             self.mongo_user,
             self.mongo_password,

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.filters.pagination import PaginationFilters
@@ -47,6 +48,8 @@ class ProductService:
                 entity=entity, session=session
             )
             return product
+        except IntegrityError as e:
+            raise e("Product and category must be unique")
         except SQLException as e:
             raise e.message
 

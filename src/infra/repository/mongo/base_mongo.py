@@ -1,15 +1,31 @@
-from src.common.filters.pagination import PaginationFilters
-from src.domain.entities.base import BaseEntity
+from dataclasses import dataclass
+from typing import Any
+
+from src.infra.db.mongo.db import AsyncMongoClient
 
 
-class MongoRepo:
+@dataclass(eq=False)
+class MongoRepository:
+    client: AsyncMongoClient
 
-    def add_one(self, entity: BaseEntity): ...
+    async def add_one(self, data: dict[Any, Any]):
+        result = await self.client.get_collection.insert_one(data)
+        return str(result.inserted_id)
 
-    def get_one(self, entity: BaseEntity): ...
+    async def get_one(self, data: dict[Any, Any]):
+        document = await self.client.get_collection.find_one(data)
+        return document
 
-    def get_many(self, entity: BaseEntity, filters: PaginationFilters): ...
+    async def get_many(self, data: dict[Any, Any]):
+        documents = await self.client.get_collection.find(data).to_list(length=None)
+        return documents
 
-    def delete_one(self, entity: BaseEntity): ...
+    async def delete_one(self, data: dict[Any, Any]):
+        result = await self.client.get_collection.delete_one(data)
+        return result.deleted_count > 0
 
-    def update_one(self, entity: BaseEntity): ...
+    async def update_one(self, filter_data: dict[Any, Any], data: dict[Any, Any]):
+        result = await self.client.get_collection.update_one(
+            filter_data, {"$set": data}
+        )
+        return result.modified_count > 0

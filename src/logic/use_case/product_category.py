@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass
+import datetime
 
 from src.common.settings.config import get_settings
 from src.domain.entities.base_lxml import (
@@ -8,6 +9,9 @@ from src.domain.entities.base_lxml import (
 )
 from src.domain.entities.lxml_entities import (
     CategoryEntity,
+    ProductEntity,
+    QuantityEntity,
+    PriceEntity,
 )
 from src.infra.db.postgres.db import AsyncPostgresClient
 from src.infra.db.postgres.models.lxml_models import Category, Product
@@ -37,6 +41,7 @@ class CreateProductCategoryUseCase:
                 product = await self.product_service.create_product(
                     entity=ProductEntityWithCategoryId(
                         product=entity.product,
+                        sale_date=entity.sale_date,
                         quantity=entity.quantity,
                         price=entity.price,
                         category_id=category.id,
@@ -86,3 +91,17 @@ def get_parse_and_create_products():
         uow=AsyncPostgresClient(settings=get_settings()),
         parser=LXMLParser(),
     )
+
+
+async def main():
+    a = BaseLxmlEntity(
+        product=ProductEntity(name="Product R"),
+        sale_date=datetime.date(2024, 11, 21),
+        quantity=QuantityEntity(quantity=46),
+        price=PriceEntity(price=1500),
+        category_name="test",
+    )
+    await get_product_service_usecase().create_product_category_usecase(entity=a)
+
+
+print(asyncio.run(main()))

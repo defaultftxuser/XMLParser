@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +17,9 @@ from src.domain.entities.base_lxml import (
     CategoryModelWithId,
     ProductEntityWithCategoryId,
 )
-from src.domain.entities.lxml_entities import CategoryEntity
+from src.domain.entities.lxml_entities import (
+    CategoryEntity,
+)
 from src.infra.db.postgres.models.lxml_models import Product, Category
 from src.infra.repository.postgres.base_postgres import PostgresRepo
 
@@ -57,11 +61,17 @@ class ProductRepository(PostgresRepo):
         self, session: AsyncSession, entity: ProductEntityWithCategoryId
     ) -> ProductModelWithId | None:
         try:
-            product = await self.create_one(entity=entity.to_dict(), session=session)
-            return (
-                convert_from_model_to_product_entity_with_id(product)
-                if product
-                else None
+            query = (
+                insert(self.model)
+                .values(**entity.to_dict())
+                .on_conflict_do_update(
+                    index_elements=["product", "category_id"],
+                    set_={"quantity": self.model.quantity + entity.quantity.quantity},
+                )
+            ).returning(self.model.__table__)
+            product = await session.execute(query)
+            return convert_from_model_to_product_entity_with_id(
+                product.mappings().fetchone()
             )
         except SQLAlchemyError as e:
             raise e
@@ -128,9 +138,7 @@ class CategoryRepository(PostgresRepo):
     ) -> CategoryModelWithId | None:
         try:
 
-            category = await self.get_or_create(
-                entity=entity.to_dict(), session=session
-            )
+            category = await self.create_one(entity=entity.to_dict(), session=session)
             return (
                 convert_from_category_model_to_category_with_id(category)
                 if category
@@ -138,6 +146,20 @@ class CategoryRepository(PostgresRepo):
             )
         except SQLAlchemyError as e:
             raise e
+
+    async def get_or_create(
+        self, session: AsyncSession, entity: CategoryEntity
+    ) -> CategoryModelWithId:
+
+        query = (
+            (insert(self.model).values(**entity.to_dict())).on_conflict_do_update(
+                index_elements=["name"], set_={"updated_at": datetime.now()}
+            )
+        ).returning(self.model.__table__.c)
+        result = await session.execute(query)
+        return convert_from_category_model_to_category_with_id(
+            result.mappings().fetchone()
+        )
 
     async def update_category(
         self, session: AsyncSession, entity: CategoryEntity
@@ -180,6 +202,7 @@ class ProductCategoryRepository:
         query = (
             select(
                 self.product_repository.model.product,
+                self.product_repository.model.sale_date,
                 self.product_repository.model.price,
                 self.product_repository.model.quantity,
                 self.product_repository.model.created_at,
