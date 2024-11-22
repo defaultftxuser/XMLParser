@@ -68,3 +68,11 @@ def convert_from_category_model_to_category_only_with_name(
 
 def convert_into_kopeck(to_be_converted: float, constant: int = 100) -> int:
     return int(to_be_converted * constant)
+
+
+def convert_from_mongo_to_entity(collection: dict[Any, Any]):
+    return {
+        "sale_date": str(collection.get("sale_date", "")),
+        "answer": str(collection["answer"]),
+        "_id": str(collection["_id"]),
+    }

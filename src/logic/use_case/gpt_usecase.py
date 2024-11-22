@@ -2,19 +2,16 @@ import asyncio
 from dataclasses import dataclass
 from datetime import date
 
-import httpx
+
 import orjson
 
 from src.common.settings.config import ProjectSettings
 from src.common.settings.logger import get_logger
 from src.domain.entities.base_lxml import GPTAnswerEntity
-from src.infra.db.mongo.db import AsyncMongoClient
-from src.infra.db.postgres.db import AsyncPostgresClient
-from src.infra.db.postgres.models.lxml_models import Product, Category
-from src.infra.repository.mongo.gpt_answers_repo import GPTAnswersRepo
-from src.infra.repository.postgres.raw_sql import QueryRepository
+
 from src.logic.other.gpt_service import QuerySQLService
 from src.logic.other.http_client import HttpClient
+from src.logic.repo_service.mongo_service import MongoService
 
 logger = get_logger(__name__)
 
@@ -24,7 +21,7 @@ class GPTUseCase:
     settings: ProjectSettings
     service: QuerySQLService
     http_client: HttpClient
-    repository: GPTAnswersRepo
+    mongo_service: MongoService
 
     async def get_summary(self, input_date: date):
         try:
@@ -63,37 +60,42 @@ class GPTUseCase:
             )
 
             logger.debug(f"Generated GPT request template: {json_template}")
-
+            headers = get_headers_for_gpt(self.settings.iam_token)
             response = await self.http_client.make_post_request(
                 url=self.settings.gpt_url,
                 json=json_template,
-                headers=orjson.loads(self.settings.gpt_headers),
+                headers=headers,
             )
 
-            if response.status_code == 200:
-                logger.info(f"GPT request successful for date: {input_date}")
-                try:
-                    document = await self.repository.add_one(
-                        entity=GPTAnswerEntity(
-                            date=input_date,
-                            answer=response.json()["result"]["alternatives"][0][
-                                "message"
-                            ]["text"],
-                        ),
-                    )
-                    logger.info(f"Summary saved to database for date: {input_date}")
-                    return document
-                except Exception as e:
-                    logger.error(
-                        f"Error saving GPT answer to database for date {input_date}: {e}"
-                    )
-                    raise
-            else:
-                logger.warning(
-                    f"GPT request failed for date: {input_date}. "
-                    f"Status code: {response.status_code}, Response: {response.text}"
+            if response.status_code == 401:
+                response = await self.http_client.make_post_request(
+                    url=self.settings.iam_token_url,
+                    json=self.settings.yandex_oauth_json,
                 )
-                return None
+            token = response.json().get("iamToken", None)
+            headers = get_headers_for_gpt(token)
+            response = await self.http_client.make_post_request(
+                url=self.settings.gpt_url,
+                json=json_template,
+                headers=headers,
+            )
+
+            logger.info(f"GPT request successful for date: {input_date}")
+            try:
+                document = await self.mongo_service.add_one(
+                    entity=GPTAnswerEntity(
+                        sale_date=input_date,
+                        answer=response.json()["result"]["alternatives"][0]["message"][
+                            "text"
+                        ],
+                    )
+                )
+                logger.info(f"Summary saved to database for date: {input_date}")
+                return document
+            except Exception as e:
+                logger.error(
+                    f"Error saving GPT answer to database for date {input_date}: {e}"
+                )
         except Exception as e:
             logger.error(
                 f"Error during GPT summary creation for date {input_date}: {e}"
@@ -117,17 +119,5 @@ def update_gpt_template(
         raise
 
 
-def get_gpt_usecase():
-    return GPTUseCase(
-        settings=ProjectSettings(),
-        service=QuerySQLService(
-            repository=QueryRepository(product_model=Product, category_model=Category),
-            uow=AsyncPostgresClient(settings=ProjectSettings()),
-        ),
-        http_client=HttpClient(client=httpx.AsyncClient()),
-        repository=GPTAnswersRepo(
-            client=AsyncMongoClient(
-                settings=ProjectSettings(), collection="gpt_answers"
-            )
-        ),
-    )
+def get_headers_for_gpt(token: str) -> dict:
+    return {"Authorization": "Bearer " + token, "Content-Type": "application/json"}

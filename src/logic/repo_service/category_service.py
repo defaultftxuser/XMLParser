@@ -58,9 +58,7 @@ class CategoryService:
             category = await self.repository.get_or_create(
                 entity=entity, session=session
             )
-            if category:
-                logger.info(f"Successfully created or fetched category: {category}")
-            else:
+            if not category:
                 logger.warning(f"Category creation returned None. Entity: {entity}")
             return category
         except SQLAlchemyError as e:

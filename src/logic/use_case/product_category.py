@@ -1,7 +1,8 @@
 import asyncio
 from dataclasses import dataclass
 
-from src.common.settings.config import get_settings
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.common.settings.logger import get_logger
 from src.domain.entities.base_lxml import (
     BaseLxmlEntity,
@@ -10,13 +11,10 @@ from src.domain.entities.base_lxml import (
 from src.domain.entities.lxml_entities import (
     CategoryEntity,
 )
-from src.infra.db.postgres.db import AsyncPostgresClient
-from src.infra.db.postgres.models.lxml_models import Category, Product
+
 from src.infra.exceptions.exceptions import SQLException
-from src.infra.repository.postgres.lxml_repos import (
-    CategoryRepository,
-    ProductRepository,
-)
+
+
 from src.logic.repo_service.category_service import CategoryService
 from src.logic.repo_service.product_service import ProductService
 from src.logic.xml_parser import LXMLParser
@@ -29,10 +27,10 @@ logger = get_logger(__name__)
 class CreateProductCategoryUseCase:
     category_service: CategoryService
     product_service: ProductService
-    uow: AsyncPostgresClient
+    session: AsyncSession
 
     async def create_product_category_usecase(self, entity: BaseLxmlEntity):
-        async with self.uow.get_async_session() as session:  # noqa
+        async with self.session() as session:  # noqa
             try:
                 logger.debug(f"Starting to process entity: {entity}")
                 category = await self.category_service.create_category(
@@ -64,11 +62,11 @@ class CreateProductCategoryUseCase:
 
 
 @dataclass(eq=False)
-class ParseAndCreateProductCategoryUseCase(CreateProductCategoryUseCase):
+class ParseAndCreateProductCategoryUseCase:
     category_service: CategoryService
     product_service: ProductService
-    uow: AsyncPostgresClient
     parser: LXMLParser
+    product_service_usecase: CreateProductCategoryUseCase
 
     async def parse_and_create(self, lxml_data: str, element: str = "//product"):
         try:
@@ -78,7 +76,11 @@ class ParseAndCreateProductCategoryUseCase(CreateProductCategoryUseCase):
             if len(entities) > 0:
                 batch = []
                 for entity in entities:
-                    batch.append(self.create_product_category_usecase(entity=entity))
+                    batch.append(
+                        self.product_service_usecase.create_product_category_usecase(
+                            entity=entity
+                        )
+                    )
                     if len(batch) == 100:
                         await asyncio.gather(*batch)
                 if len(batch) > 0:

@@ -1,5 +1,6 @@
+from datetime import timedelta
+
 from celery import Celery
-from celery.schedules import crontab
 
 from src.common.settings.config import ProjectSettings
 
@@ -25,7 +26,7 @@ app.autodiscover_tasks(["src.infra.celery.tasks"])
 app.conf.beat_schedule = {
     "task-every-hour": {
         "task": "src.infra.celery.tasks.gpt_task",
-        "schedule": crontab(minute="0", hour="*"),
+        "schedule": timedelta(minutes=10),
     },
 }
 

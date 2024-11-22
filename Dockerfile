@@ -1,11 +1,19 @@
 FROM python:3.12.1
 
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 WORKDIR /app
 
-RUN pip install --no-cache-dir poetry
+RUN apt-get update && apt-get install -y python3-dev
 
-COPY pyproject.toml poetry.lock* /app/
+RUN pip install --upgrade pip
+RUN pip install poetry
 
-RUN poetry install --no-dev --no-interaction --no-ansii
+COPY pyproject.toml poetry.lock ./
 
-COPY . /app/
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+
+COPY . .
+
+

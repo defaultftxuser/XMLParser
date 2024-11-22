@@ -60,5 +60,5 @@ class DevProjectSettings(BaseSettings):
         )
 
 
-def get_settings() -> DevProjectSettings:
+def get_dev_settings() -> DevProjectSettings:
     return DevProjectSettings()

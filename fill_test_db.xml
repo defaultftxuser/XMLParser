@@ -1,0 +1,74 @@
+<sales_data date="2024-01-01">
+    <products>
+        <product>
+            <id>1</id>
+            <name>Product A</name>
+            <quantity>100</quantity>
+            <price>1500.00</price>
+            <category>Electronics</category>
+        </product>
+        <product>
+            <id>2</id>
+            <name>Product B</name>
+            <quantity>50</quantity>
+            <price>2500.00</price>
+            <category>Home Appliances</category>
+        </product>
+        <product>
+            <id>3</id>
+            <name>Product C</name>
+            <quantity>200</quantity>
+            <price>750.00</price>
+            <category>Office Supplies</category>
+        </product>
+        <product>
+            <id>4</id>
+            <name>Product D</name>
+            <quantity>30</quantity>
+            <price>12000.00</price>
+            <category>Furniture</category>
+        </product>
+        <product>
+            <id>5</id>
+            <name>Product E</name>
+            <quantity>15</quantity>
+            <price>50000.00</price>
+            <category>Luxury Items</category>
+        </product>
+                <product>
+            <id>6</id>
+            <name>Gadget X</name>
+            <quantity>50</quantity>
+            <price>199.99</price>
+            <category>Technology</category>
+        </product>
+        <product>
+            <id>7</id>
+            <name>Smartwatch Y</name>
+            <quantity>120</quantity>
+            <price>299.99</price>
+            <category>Wearables</category>
+        </product>
+        <product>
+            <id>8</id>
+            <name>Air Purifier Z</name>
+            <quantity>80</quantity>
+            <price>450.00</price>
+            <category>Home and Living</category>
+        </product>
+        <product>
+            <id>9</id>
+            <name>Electric Bike A</name>
+            <quantity>15</quantity>
+            <price>1200.00</price>
+            <category>Transport</category>
+        </product>
+        <product>
+            <id>10</id>
+            <name>Gaming Laptop B</name>
+            <quantity>30</quantity>
+            <price>2200.00</price>
+            <category>Computers</category>
+        </product>
+    </products>
+</sales_data>

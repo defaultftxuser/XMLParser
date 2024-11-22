@@ -27,13 +27,15 @@ class ProjectSettings(BaseSettings):
     redis_host: str = Field(alias="REDIS_HOST")
     redis_port: str = Field(alias="REDIS_PORT")
 
-    celery_name: str = Field("CELERY_NAME")
+    celery_name: str = Field(alias="CELERY_NAME")
+
+    yandex_oauth_json: dict = Field(alias="YANDEX_OAUTH_JSON")
 
     gpt_url: str = Field(alias="GPT_URL")
-    gpt_headers: str = Field(alias="GPT_HEADERS")
     gpt_text: str = Field(alias="GPT_TEXT")
     gpt_json: str = Field(alias="GPT_JSON")
     iam_token: str = Field(alias="IAM_TOKEN")
+    iam_token_url: str = Field(alias="IAM_TOKEN_URL")
 
     @property
     def get_sql_db_url(self) -> str:

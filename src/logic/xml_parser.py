@@ -1,7 +1,6 @@
 import datetime
 
 from lxml import etree
-from lxml.etree import XMLSyntaxError
 
 from src.common.converters.converters import convert_into_kopeck
 from src.common.settings.logger import get_logger

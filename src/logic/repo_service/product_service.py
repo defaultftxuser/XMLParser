@@ -65,7 +65,7 @@ class ProductService:
             logger.error(
                 f"Integrity error while creating product. Entity: {entity}, Error: {e}"
             )
-            raise e("Product and category must be unique")
+            raise IntegrityError
         except SQLException as e:
             logger.error(f"Error creating product. Entity: {entity}, Error: {e}")
             raise e.message

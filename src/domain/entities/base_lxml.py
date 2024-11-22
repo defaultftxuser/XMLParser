@@ -2,6 +2,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, date
 
+import bson
+
 from src.domain.entities.base import BaseEntity
 from src.domain.entities.lxml_entities import (
     ProductEntity,
@@ -108,24 +110,26 @@ class CategoryModelWithId(BaseEntity, BaseModelEntity):
 
 @dataclass(eq=False)
 class GPTAnswerEntity(BaseEntity):
-    date: datetime | date
+    sale_date: str | date
     answer: str
 
     def validate(self):
-        if isinstance(self.date, date):
-            self.date = datetime.combine(self.date, datetime.min.time())
+        if not isinstance(self.sale_date, str):
+            self.sale_date = str(self.sale_date)
 
     def to_dict(self):
-        return {"date": self.date, "answer": self.answer}
+        return {"sale_date": self.sale_date, "answer": self.answer}
 
 
 @dataclass(eq=False)
 class GPTAnswerModel(BaseEntity):
-    date: datetime
+    sale_date: str
     answer: str
-    _id: uuid
+    _id: bson
 
-    def validate(self): ...
+    def validate(self):
+        if not isinstance(self.sale_date, str):
+            self.sale_date = str(self.sale_date)
 
     def to_dict(self):
-        return {"_id": self._id, "date": self.date, "answer": self.answer}
+        return {"_id": self._id, "sale_date": self.sale_date, "answer": self.answer}
