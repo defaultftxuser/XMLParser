@@ -89,6 +89,7 @@ class ParseAndCreateProductCategoryUseCase:
                         f"products {len(entities)=} succesfully created",
                         entity.sale_date,
                     )
+            return
         except (ValueError, TypeError) as e:
             logger.error(f"Error parsing data: {e}")
             return f"Error occurred while parsing XML: {e}", None

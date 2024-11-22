@@ -18,7 +18,11 @@ from src.logic.repo_service.mongo_service import MongoService
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-@router.post("/xml")
+@router.post(
+    "/xml",
+    description="Введите ссылку с xml",
+    summary="Сгенерировать таску celery с date в файле, по которой будет составлен отчет yandex gpt",
+)
 async def create_summary(
     schema: XMLSchema,
     client: HttpClient = Depends(HttpClient),
@@ -48,7 +52,11 @@ async def create_summary(
         )
 
 
-@router.get("/get_answers")
+@router.get(
+    "/get_answers",
+    description="получить отчеты",
+    summary="взять список отчетов из дб по фильтрам",
+)
 async def get_answers(
     sale_date: str = Query(default=None, example="2024-01-01"),
     limit: int = Query(default=10),
