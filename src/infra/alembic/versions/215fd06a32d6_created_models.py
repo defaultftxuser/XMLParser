@@ -1,8 +1,8 @@
-"""created product and category models
+"""created models
 
-Revision ID: 5597757c5261
+Revision ID: 215fd06a32d6
 Revises: 
-Create Date: 2024-11-20 23:59:22.137849
+Create Date: 2024-11-22 18:50:58.925891
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '5597757c5261'
+revision: str = '215fd06a32d6'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,18 +29,17 @@ def upgrade() -> None:
     sa.UniqueConstraint('name')
     )
     op.create_table('products',
-    sa.Column('sale_date', sa.Date(), nullable=True),
+    sa.Column('sale_date', sa.Date(), nullable=False),
     sa.Column('product', sa.String(), nullable=False),
     sa.Column('price', sa.Float(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
-    sa.Column('category_id', sa.UUID(), nullable=True),
+    sa.Column('category_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('product'),
-    sa.UniqueConstraint('product', 'category_id', name='uq_product_category')
+    sa.UniqueConstraint('product', 'category_id', 'sale_date', name='uq_product_category_date')
     )
     # ### end Alembic commands ###
 

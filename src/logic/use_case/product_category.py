@@ -1,22 +1,14 @@
 import asyncio
 from dataclasses import dataclass
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.common.settings.logger import get_logger
 from src.domain.entities.base_lxml import (
     BaseLxmlEntity,
-    ProductEntityWithCategoryId,
-)
-from src.domain.entities.lxml_entities import (
-    CategoryEntity,
 )
 
 from src.infra.exceptions.exceptions import SQLException
 
-
-from src.logic.repo_service.category_service import CategoryService
-from src.logic.repo_service.product_service import ProductService
+from src.logic.repo_service.product_category_service import ProductCategoryService
 from src.logic.xml_parser import LXMLParser
 
 
@@ -25,46 +17,22 @@ logger = get_logger(__name__)
 
 @dataclass(eq=False)
 class CreateProductCategoryUseCase:
-    category_service: CategoryService
-    product_service: ProductService
-    session: AsyncSession
+    service: ProductCategoryService
 
     async def create_product_category_usecase(self, entity: BaseLxmlEntity):
-        async with self.session() as session:  # noqa
-            try:
-                logger.debug(f"Starting to process entity: {entity}")
-                category = await self.category_service.create_category(
-                    entity=CategoryEntity(name=entity.category_name),
-                    session=session,
-                )
-                logger.info(f"Category created: {category}")
-
-                product = await self.product_service.create_product(
-                    entity=ProductEntityWithCategoryId(
-                        product=entity.product,
-                        sale_date=entity.sale_date,
-                        quantity=entity.quantity,
-                        price=entity.price,
-                        category_id=category.id,
-                    ),
-                    session=session,
-                )
-                logger.info(f"Product created: {product}")
-                return product
-            except SQLException as e:
-                logger.error(
-                    f"SQL error while creating product or category: {e.message}"
-                )
-                raise
-            except Exception as e:
-                logger.error(f"Unexpected error while processing entity {entity}: {e}")
-                raise
+        try:
+            product = await self.service.create_category_product(entity=entity)
+            return product
+        except SQLException as e:
+            logger.error(f"SQL error while creating product or category: {e.message}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error while processing entity {entity}: {e}")
+            raise
 
 
 @dataclass(eq=False)
 class ParseAndCreateProductCategoryUseCase:
-    category_service: CategoryService
-    product_service: ProductService
     parser: LXMLParser
     product_service_usecase: CreateProductCategoryUseCase
 

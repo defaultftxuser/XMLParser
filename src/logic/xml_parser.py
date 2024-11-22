@@ -53,35 +53,36 @@ class LXMLParser:
 
                 logger.debug(f"Processing element: {current_element_name}")
 
-                if any(
-                    el is None
-                    for el in (
-                        current_element_category,
-                        current_element_price,
-                        current_element_quantity,
-                    )
+                # Пропускаем элемент, если обязательные данные отсутствуют
+                if (
+                    not current_element_name
+                    or current_element_quantity is None
+                    or current_element_price is None
                 ):
                     logger.warning(
-                        f"Skipping element {current_element_name} due to missing data."
+                        f"Skipping element {current_element_name} due to missing data (name, quantity, or price)."
                     )
                     continue
 
+                # Преобразуем quantity в int, если возможно
                 try:
                     current_element_quantity = int(current_element_quantity)
-                except (ValueError, TypeError) as e:
+                except (ValueError, TypeError):
                     logger.warning(
-                        f"Invalid quantity value '{current_element_quantity}' for product '{current_element_name}'. Skipping."
+                        f"Invalid quantity value '{current_element_quantity}' for product '{current_element_name}'"
                     )
                     continue
 
+                # Преобразуем price в float, если возможно
                 try:
                     current_element_price = float(current_element_price)
-                except (ValueError, TypeError) as e:
+                except (ValueError, TypeError):
                     logger.warning(
                         f"Invalid price value '{current_element_price}' for product '{current_element_name}'. Skipping."
                     )
                     continue
 
+                # Преобразуем цену в копейки
                 try:
                     price_in_kopeck = convert_into_kopeck(current_element_price)
                 except Exception as e:
@@ -90,12 +91,13 @@ class LXMLParser:
                     )
                     continue
 
+                # Обновляем количество или создаём новый объект, если продукта нет в данных
                 if current_element_name in extracted_data:
                     extracted_data[
                         current_element_name
-                    ].quantity += current_element_quantity
+                    ].quantity.quantity += current_element_quantity
                     logger.debug(
-                        f"Updated quantity for {current_element_name}: {extracted_data[current_element_name].quantity}"
+                        f"Updated quantity for {current_element_name}: {extracted_data[current_element_name].quantity.quantity}"
                     )
                 else:
                     extracted_data[current_element_name] = BaseLxmlEntity(
@@ -103,7 +105,8 @@ class LXMLParser:
                         product=ProductEntity(current_element_name),
                         quantity=QuantityEntity(current_element_quantity),
                         price=PriceEntity(price_in_kopeck),
-                        category_name=current_element_category,
+                        category_name=current_element_category
+                        or "Unknown",  # Категория по умолчанию
                     )
                     logger.debug(
                         f"Added new product to extracted data: {current_element_name}"

@@ -21,7 +21,7 @@ from src.logic.other.gpt_service import QuerySQLService
 from src.logic.other.http_client import get_http_client, HttpClient
 from src.logic.repo_service.category_service import CategoryService
 from src.logic.repo_service.mongo_service import MongoService
-from src.logic.repo_service.produce_category_service import ProductCategoryService
+from src.logic.repo_service.product_category_service import ProductCategoryService
 from src.logic.repo_service.product_service import ProductService
 from src.logic.use_case.gpt_usecase import GPTUseCase
 from src.logic.use_case.product_category import (
@@ -53,7 +53,7 @@ def _init_container() -> Container:
         scope=Scope.singleton,
     )
 
-    async_postgres_client = container.resolve(AsyncPostgresClient)
+    async_postgres_client: AsyncPostgresClient = container.resolve(AsyncPostgresClient)
 
     container.register(
         ProductRepository,
@@ -63,13 +63,13 @@ def _init_container() -> Container:
 
     container.register(
         CategoryRepository,
-        instance=CategoryRepository(model=Category),
+        factory=lambda: CategoryRepository(model=Category),
         scope=Scope.singleton,
     )
 
     container.register(
         QueryRepository,
-        instance=QueryRepository(product_model=Product, category_model=Category),
+        factory=lambda: QueryRepository(product_model=Product, category_model=Category),
     )
 
     query_repo = container.resolve(QueryRepository)
@@ -78,7 +78,7 @@ def _init_container() -> Container:
 
     container.register(
         ProductCategoryRepository,
-        instance=ProductCategoryRepository(
+        factory=lambda: ProductCategoryRepository(
             product_repository=product_repo, category_repository=category_repo
         ),
         scope=Scope.singleton,
@@ -88,24 +88,35 @@ def _init_container() -> Container:
 
     container.register(
         AsyncMongoClient,
-        instance=AsyncMongoClient(
+        factory=lambda: AsyncMongoClient(
             settings=settings, collection=settings.mongo_collection
         ),
     )
     mongo_client = container.resolve(AsyncMongoClient)
 
-    container.register(GPTAnswersRepo, instance=GPTAnswersRepo(client=mongo_client))
+    container.register(
+        GPTAnswersRepo,
+        factory=lambda: GPTAnswersRepo(client=mongo_client),
+        scope=Scope.singleton,
+    )
     mongo_answers_repo = container.resolve(GPTAnswersRepo)
 
-    container.register(MongoService, instance=MongoService(repo=mongo_answers_repo))
+    container.register(
+        MongoService,
+        instance=MongoService(repo=mongo_answers_repo),
+        scope=Scope.singleton,
+    )
     mongo_gpt_service = container.resolve(MongoService)
 
     container.register(
         QuerySQLService,
-        instance=QuerySQLService(repository=query_repo, uow=async_postgres_client),
+        instance=QuerySQLService(
+            repository=query_repo, session=async_postgres_client.get_async_session
+        ),
+        scope=Scope.singleton,
     )
 
-    container.register(LXMLParser, instance=LXMLParser())
+    container.register(LXMLParser, factory=lambda: LXMLParser, scope=Scope.singleton)
     container.register(HttpClient, factory=get_http_client)
 
     query_sql_service = container.resolve(QuerySQLService)
@@ -113,15 +124,25 @@ def _init_container() -> Container:
     httpx_client: HttpClient = container.resolve(HttpClient)
 
     container.register(
-        CategoryService, instance=CategoryService(repository=category_repo)
+        CategoryService,
+        instance=CategoryService(
+            repository=category_repo, session=async_postgres_client.get_async_session
+        ),
     )
-    container.register(ProductService, instance=ProductService(repository=product_repo))
+    container.register(
+        ProductService,
+        instance=ProductService(
+            repository=product_repo, session=async_postgres_client.get_async_session
+        ),
+    )
     container.register(
         ProductCategoryService,
-        instance=ProductCategoryService(repository=product_category_repo),
+        instance=ProductCategoryService(
+            repository=product_category_repo,
+            session=async_postgres_client.get_async_session,
+        ),
     )
-    category_service = container.resolve(CategoryService)
-    product_service = container.resolve(ProductService)
+    product_category_service = container.resolve(ProductCategoryService)
 
     container.register(
         GPTUseCase,
@@ -140,9 +161,7 @@ def _init_container() -> Container:
     container.register(
         CreateProductCategoryUseCase,
         instance=CreateProductCategoryUseCase(
-            category_service=category_service,
-            product_service=product_service,
-            session=async_postgres_client.get_async_session,
+            service=product_category_service,
         ),
     )
     product_service_usecase = container.resolve(CreateProductCategoryUseCase)
@@ -150,8 +169,6 @@ def _init_container() -> Container:
     container.register(
         ParseAndCreateProductCategoryUseCase,
         instance=ParseAndCreateProductCategoryUseCase(
-            category_service=category_service,
-            product_service=product_service,
             parser=lxml_parse,
             product_service_usecase=product_service_usecase,
         ),

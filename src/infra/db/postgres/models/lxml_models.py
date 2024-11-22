@@ -17,20 +17,26 @@ class Category(AbstractModel):
 
     name = Column(String, nullable=False, unique=True)
 
-    products = relationship("Product", back_populates="category")
+    products = relationship(
+        "Product", back_populates="category", cascade="all, delete-orphan"
+    )
 
 
 class Product(AbstractModel):
     __tablename__ = "products"
-    sale_date = Column(Date)
-    product = Column(String, nullable=False, unique=True)
+    sale_date = Column(Date, nullable=False)
+    product = Column(String, nullable=False)
     price = Column(Float, nullable=False)
-    quantity = Column(Integer, nullable=False)
+    quantity = Column(Integer, nullable=False, default=0)
 
-    category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
+    category_id = Column(
+        UUID(as_uuid=True), ForeignKey("categories.id"), nullable=False
+    )
 
     category = relationship("Category", back_populates="products")
 
     __table_args__ = (
-        UniqueConstraint("product", "category_id", name="uq_product_category"),
+        UniqueConstraint(
+            "product", "category_id", "sale_date", name="uq_product_category_date"
+        ),
     )

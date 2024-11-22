@@ -68,3 +68,15 @@ class CategoryEntity(BaseEntity):
 
     def to_dict(self):
         return {"name": self.name}
+
+
+@dataclass(eq=False)
+class CategoryQuery(BaseEntity):
+    name: str | None = ""
+
+    def validate(self): ...
+
+    def to_dict(self):
+        if not self.name:
+            return
+        return {"name": self.name}

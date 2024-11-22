@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update, delete
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.common.converters.converters import (
@@ -16,11 +17,16 @@ from src.domain.entities.base_lxml import (
     ProductModelWithId,
     CategoryModelWithId,
     ProductEntityWithCategoryId,
+    BaseLxmlEntity,
+    ProductQuery,
+    ProductEntityWithoutCategoryId,
 )
 from src.domain.entities.lxml_entities import (
     CategoryEntity,
+    CategoryQuery,
 )
 from src.infra.db.postgres.models.lxml_models import Product, Category
+from src.infra.exceptions.exceptions import SQLException
 from src.infra.repository.postgres.base_postgres import PostgresRepo
 
 logger = get_logger(__name__)
@@ -29,132 +35,169 @@ logger = get_logger(__name__)
 @dataclass(eq=False)
 class ProductRepository(PostgresRepo):
 
-    async def get_product(
-        self, session: AsyncSession, entity: ProductEntityWithCategoryId
-    ) -> ProductModelWithId | None:
-        product = await self.get_one(entity=entity.to_dict(), session=session)
-        if not product:
-            logger.debug(f"No product found for ID: {entity.to_dict()}")
-            return None
-        return convert_from_model_to_product_entity_with_id(product)
-
-    async def get_products(
+    async def get(
         self,
         session: AsyncSession,
-        entity: ProductEntityWithCategoryId,
-        filters: PaginationFilters,
+        entity: ProductQuery,
+        limit: int = 10,
+        offset: int = 0,
     ) -> list[ProductModelWithId] | None:
-        products = await self.get_many(
-            entity=entity.to_dict(), session=session, filters=filters
+        products = await session.execute(
+            select(self.model.__table__.columns)
+            .filter_by(**entity.to_dict())
+            .offset(offset)
+            .limit(limit)
         )
-        if not products:
-            return None
-        logger.debug(f"Found {len(products)} products.")
+
         return [
             convert_from_model_to_product_entity_with_id(product)
-            for product in products
+            for product in products.mappings().all()
         ]
 
-    async def create_product(
+    async def create_one(
         self, session: AsyncSession, entity: ProductEntityWithCategoryId
     ) -> ProductModelWithId | None:
-        query = (
+
+        query = await session.execute(
             insert(self.model)
             .values(**entity.to_dict())
-            .on_conflict_do_update(
-                index_elements=["product", "category_id"],
-                set_={"quantity": self.model.quantity + entity.quantity.quantity},
-            )
-        ).returning(self.model.__table__)
-        product = await session.execute(query)
-        return convert_from_model_to_product_entity_with_id(
-            product.mappings().fetchone()
+            .returning(self.model.__table__.columns)
         )
 
-    async def update_product(
-        self, session: AsyncSession, entity: ProductEntityWithCategoryId
-    ) -> ProductModelWithId | None:
-        product = await self.update_one(entity=entity.to_dict(), session=session)
-        if product:
-            logger.debug(f"Product updated: {product}")
-            return convert_from_model_to_product_entity_with_id(product)
-        return None
+        return convert_from_model_to_product_entity_with_id(query.mappings().fetchone())
 
-    async def delete_product(
+    async def create_or_update(
         self, session: AsyncSession, entity: ProductEntityWithCategoryId
+    ):
+        try:
+            created = await self.create_one(session=session, entity=entity)
+            return created
+        except IntegrityError:
+            await session.rollback()
+            updated = await self.update_one(
+                session=session,
+                entity=ProductEntityWithoutCategoryId(
+                    sale_date=entity.sale_date,
+                    product=entity.product,
+                    quantity=entity.quantity,
+                    price=entity.price,
+                ),
+                change_entity=ProductEntityWithoutCategoryId(
+                    sale_date=entity.sale_date,
+                    product=entity.product,
+                    quantity=entity.quantity,
+                    price=entity.price,
+                ),
+            )
+            return updated
+
+    async def update_one(
+        self,
+        session: AsyncSession,
+        entity: ProductEntityWithoutCategoryId,
+        change_entity: ProductEntityWithoutCategoryId,
     ) -> ProductModelWithId | None:
-        product = await self.delete_one(entity=entity.to_dict(), session=session)
-        if product:
-            logger.debug(f"Product deleted: {product}")
-            return convert_from_model_to_product_entity_with_id(product)
-        return None
+        updated_model = await session.execute(
+            update(self.model)
+            .where(
+                self.model.product == entity.product.name,
+                self.model.sale_date == entity.sale_date,
+            )
+            .values(quantity=self.model.quantity + entity.quantity.quantity)
+            .returning(self.model.__table__.columns)
+        )
+        return convert_from_model_to_product_entity_with_id(
+            updated_model.mappings().fetchone()
+        )
+
+    async def delete_one(
+        self, session: AsyncSession, entity: ProductQuery
+    ) -> ProductModelWithId | None:
+        query = await session.execute(
+            delete(self.model)
+            .filter_by(**entity.to_dict())
+            .returning(self.model.__table__.columns)
+        )
+        return convert_from_model_to_product_entity_with_id(query.mappings().fetchone())
 
 
 @dataclass(eq=False)
 class CategoryRepository(PostgresRepo):
 
-    async def get_category(
-        self, session: AsyncSession, entity: CategoryEntity
-    ) -> CategoryModelWithId | None:
-        category = await self.get_one(entity=entity.to_dict(), session=session)
-        if category:
-            logger.debug(f"Category found: {category}")
-            return convert_from_category_model_to_category_with_id(category)
-
-    async def get_categories(
-        self, session: AsyncSession, entity: CategoryEntity, filters: PaginationFilters
+    async def get(
+        self,
+        session: AsyncSession,
+        entity: CategoryQuery,
+        limit: int | None = 10,
+        offset: int | None = 0,
     ) -> list[CategoryModelWithId] | None:
-        categories = await self.get_many(
-            entity=entity.to_dict(), session=session, filters=filters
+        products = await session.execute(
+            select(self.model.__table__.columns)
+            .filter_by(**entity.to_dict())
+            .offset(offset)
+            .limit(limit)
         )
-        if not categories:
-            return None
+
         return [
-            convert_from_category_model_to_category_with_id(category)
-            for category in categories
+            convert_from_category_model_to_category_with_id(product)
+            for product in products.mappings().all()
         ]
 
-    async def create_category(
+    async def create_one(
         self, session: AsyncSession, entity: CategoryEntity
     ) -> CategoryModelWithId | None:
-        logger.debug(f"Creating category with data: {entity.to_dict()}")
-        category = await self.create_one(entity=entity.to_dict(), session=session)
-        if category:
-            return convert_from_category_model_to_category_with_id(category)
-        return None
-
-    async def get_or_create(
-        self, session: AsyncSession, entity: CategoryEntity
-    ) -> CategoryModelWithId:
-        query = (
+        query = await session.execute(
             insert(self.model)
             .values(**entity.to_dict())
-            .on_conflict_do_update(
-                index_elements=["name"], set_={"updated_at": datetime.now()}
-            )
-        ).returning(self.model.__table__.c)
+            .returning(self.model.__table__.columns)
+        )
+
+        return convert_from_category_model_to_category_with_id(
+            query.mappings().fetchone()
+        )
+
+    async def update_one(
+        self,
+        session: AsyncSession,
+        entity: CategoryEntity,
+        change_entity: CategoryEntity,
+    ) -> CategoryModelWithId | None:
+        query = (
+            update(self.model)
+            .filter_by(**entity.to_dict())
+            .values(change_entity.to_dict())
+            .returning(self.model.__table__.columns)
+        )
         result = await session.execute(query)
         return convert_from_category_model_to_category_with_id(
             result.mappings().fetchone()
         )
 
-    async def update_category(
-        self, session: AsyncSession, entity: CategoryEntity
+    async def create_or_update(
+        self,
+        session: AsyncSession,
+        entity: CategoryEntity,
     ) -> CategoryModelWithId | None:
-        category = await self.update_one(entity=entity.to_dict(), session=session)
-        if category:
-            logger.debug(f"Category updated: {category}")
-            return convert_from_category_model_to_category_with_id(category)
-        return None
+        try:
+            inserted = await self.create_one(session=session, entity=entity)
+            return inserted
+        except IntegrityError:
+            await session.rollback()
+            return await self.update_one(
+                session=session, entity=entity, change_entity=entity
+            )
 
-    async def delete_category(
+    async def delete_one(
         self, session: AsyncSession, entity: CategoryEntity
     ) -> CategoryModelWithId | None:
-        category = await self.delete_one(entity=entity.to_dict(), session=session)
-        if category:
-            logger.debug(f"Category deleted: {category}")
-            return convert_from_category_model_to_category_with_id(category)
-        return None
+        deleted_product = await session.execute(
+            delete(self.model)
+            .filter_by(**entity.to_dict())
+            .returning(self.model.__table__.columns)
+        )
+        return convert_from_category_model_to_category_with_id(
+            deleted_product.mappings().fetchone()
+        )
 
 
 @dataclass(eq=False)
@@ -187,3 +230,27 @@ class ProductCategoryRepository:
         products = result.mappings().all()
 
         return products
+
+    async def create_category_and_product(
+        self,
+        session,
+        entity: BaseLxmlEntity,
+    ):
+        try:
+            category = await self.category_repository.create_or_update(
+                session=session, entity=CategoryEntity(name=entity.category_name)
+            )
+            product = await self.product_repository.create_or_update(
+                session=session,
+                entity=ProductEntityWithCategoryId(
+                    category_id=category.id,
+                    sale_date=entity.sale_date,
+                    product=entity.product,
+                    quantity=entity.quantity,
+                    price=entity.price,
+                ),
+            )
+            return product
+
+        except SQLException as e:
+            raise e.message

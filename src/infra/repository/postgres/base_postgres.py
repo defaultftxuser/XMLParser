@@ -1,11 +1,10 @@
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-from sqlalchemy import select, delete, update, RowMapping
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import RowMapping
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.common.filters.pagination import PaginationFilters
 from src.common.settings.logger import get_logger
 
 logger = get_logger(__name__)
@@ -15,47 +14,29 @@ logger = get_logger(__name__)
 class PostgresRepo:
     model: Any
 
-    async def get_one(
-        self, session: AsyncSession, entity: dict[Any, Any]
-    ) -> dict[Any, Any] | None:
-        result = await session.execute(
-            select(self.model.__table__.columns).filter_by(**entity)
-        )
-        return result.mappings().fetchone()
+    @abstractmethod
+    async def get(
+        self,
+        session: AsyncSession,
+        entity: dict[Any, Any],
+        limit: int,
+        offset: int,
+    ) -> Sequence[RowMapping]: ...
 
-    async def get_many(
-        self, session: AsyncSession, entity: dict[Any, Any], filters: PaginationFilters
-    ) -> Sequence[RowMapping]:
-        result = await session.execute(
-            select(self.model.__table__.columns)
-            .filter_by(**entity)
-            .offset(filters.offset)
-            .limit(filters.limit)
-        )
-        return result.mappings().all()
-
+    @abstractmethod
     async def create_one(
         self, session: AsyncSession, entity: dict[Any, Any]
-    ) -> dict[Any, Any] | None:
-        result = await session.execute(
-            insert(self.model).values(**entity).returning(self.model.__table__.columns)
-        )
-        return result.mappings().fetchone()
+    ) -> dict[Any, Any] | None: ...
 
+    @abstractmethod
     async def update_one(
-        self, session: AsyncSession, entity: dict[Any, Any]
-    ) -> dict[Any, Any] | None:
-        result = await session.execute(
-            update(self.model).values(**entity).returning(self.model.__table__.columns)
-        )
-        return result.mappings().fetchone()
+        self,
+        session: AsyncSession,
+        entity: dict[Any, Any],
+        change_entity: dict[Any, Any],
+    ) -> dict[Any, Any] | None: ...
 
+    @abstractmethod
     async def delete_one(
         self, session: AsyncSession, entity: dict[Any, Any]
-    ) -> dict[Any, Any] | None:
-        result = await session.execute(
-            delete(self.model)
-            .filter_by(**entity)
-            .returning(self.model.__table__.columns)
-        )
-        return result.mappings().fetchone()
+    ) -> dict[Any, Any] | None: ...
