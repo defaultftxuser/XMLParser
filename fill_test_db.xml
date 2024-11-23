@@ -12,7 +12,7 @@
             <name>Product B</name>
             <quantity>50</quantity>
             <price>2500.00</price>
-            <category>Home Appliances</category>
+            <category>Electronics</category>
         </product>
         <product>
             <id>3</id>
